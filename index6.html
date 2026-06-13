@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>TCS Aptitude Test</title>
+
+<style>
+body{
+    font-family:"Segoe UI",Arial,sans-serif;
+    margin:0;
+    background:linear-gradient(135deg,#eef2f7,#d9e4f5);
+}
+
+#topBar{
+    background:linear-gradient(90deg,#0b3d91,#1e5eff);
+    color:white;
+    padding:14px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-weight:600;
+}
+
+#timer{
+    background:rgba(255,255,255,0.2);
+    padding:6px 12px;
+    border-radius:20px;
+    font-weight:bold;
+}
+
+.section{
+    display:none;
+    padding:25px;
+}
+
+.active{
+    display:block;
+}
+
+.card{
+    background:white;
+    padding:25px;
+    margin:20px auto;
+    border-radius:14px;
+    box-shadow:0 10px 25px rgba(0,0,0,.1);
+    max-width:900px;
+}
+
+button{
+    padding:12px 20px;
+    background:linear-gradient(90deg,#0b3d91,#1e5eff);
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    margin-top:15px;
+}
+
+button:hover{
+    transform:scale(1.02);
+}
+
+.option{
+    margin:12px 0;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.option:hover{
+    background:#f3f7ff;
+}
+
+input[type=radio]{
+    margin-right:10px;
+}
+
+h2{
+    color:#0b3d91;
+}
+</style>
+</head>
+
+<body>
+
+<div id="topBar">
+    <div>📘 TCS Aptitude Test</div>
+    <div id="timer">Time: --</div>
+</div>
+
+<!-- START -->
+<div id="start" class="section active">
+    <div class="card">
+        <h2>Start Exam</h2>
+        <p>
+            Total Questions : 15<br>
+            Time Per Question : 2 Minutes<br>
+            Full Screen Mandatory
+        </p>
+
+        <button onclick="startExam()">Begin Test</button>
+    </div>
+</div>
+
+<!-- MCQ -->
+<div id="mcq" class="section">
+    <div class="card">
+        <h2>Quantitative Aptitude</h2>
+
+        <p id="qText"></p>
+
+        <div id="options"></div>
+
+        <button onclick="nextQ()">Next</button>
+    </div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="section">
+    <div class="card">
+        <h2>Exam Completed</h2>
+
+        <h3 id="score"></h3>
+
+        <p id="percentage"></p>
+    </div>
+</div>
+
+<script>
+
+/* ==========================
+ANTI CHEATING
+========================== */
+
+let violationCount = 0;
+
+function goFullScreen(){
+    let elem=document.documentElement;
+
+    if(elem.requestFullscreen){
+        elem.requestFullscreen();
+    }
+}
+
+document.addEventListener("visibilitychange",function(){
+
+    if(document.hidden){
+
+        violationCount++;
+
+        alert("⚠ Tab Switching Detected");
+
+        if(violationCount>=2){
+            finishExam();
+        }
+    }
+});
+
+window.addEventListener("blur",function(){
+
+    if(document.hidden){
+        violationCount++;
+    }
+
+});
+document.addEventListener("contextmenu",e=>e.preventDefault());
+
+document.addEventListener("copy",e=>e.preventDefault());
+document.addEventListener("cut",e=>e.preventDefault());
+document.addEventListener("paste",e=>e.preventDefault());
+
+document.addEventListener("keydown",function(e){
+
+    if(
+        e.key==="F12" ||
+        (e.ctrlKey && e.shiftKey && e.key==="I") ||
+        (e.ctrlKey && e.key.toLowerCase()==="u")
+    ){
+        e.preventDefault();
+        violationCount++;
+    }
+});
+let index = 0;
+let timer;
+let answers = [];
+
+const questions = [
+
+{
+question:"A and B can together do a piece of work in 15 days. B can do 1/4 of the work in 5 days. A alone can do it in how many days?",
+options:["30","40","45","60"],
+answer:"60"
+},
+
+{
+question:"A and B, working alone, can do a work in 8 and 5 days respectively. They work together and a total payment of Rs.6500 is made for them. What is the share of B?",
+options:["3900","2500","4000","2600"],
+answer:"4000"
+},
+
+{
+question:"A can finish a work in 8 days. He works for 3 days and leaves. B completes remaining work in 5 days. How long would B alone take?",
+options:["8 days","7 days","5 days","6 days"],
+answer:"8 days"
+},
+
+{
+question:"Sangeetha can complete a work in 16 days working 10 hours per day. Sahithya can complete the same work in 18 days working 8 hours per day. If both work together working 9 hours per day, in how many days can they complete the work?",
+options:["180/19 days","150/19 days","160/19 days","170/19 days"],
+answer:"160/19 days"
+},
+
+{
+question:"Raju and Ramesh can complete a piece of work in 12 days and 16 days respectively. If they work alternately with Raju starting, in how many days will the work be completed?",
+options:["13(2/3) days","14(2/3) days","11(2/9) days","12(5/9) days"],
+answer:"13(2/3) days"
+},
+
+{
+question:"A builder can build a wall in 16 hours while a destroyer can demolish it in 40 hours. Both work together for 24 hours and then the destroyer leaves. Total time taken?",
+options:["26h 46m","25h 6m","24h 16m","25h 36m"],
+answer:"25h 36m"
+},
+
+{
+question:"Rocky is twice as efficient as Gani and takes 63 days less than Gani to dig a well. Time taken together?",
+options:["50 days","45 days","42 days","52 days"],
+answer:"42 days"
+},
+
+{
+question:"A road of 210 km can be constructed by 540 workmen in 28 days. How many workmen are required to build a road of 150 km in 18 days?",
+options:["600","300","650","450"],
+answer:"600"
+},
+
+{
+question:"26 men can complete a bridge in 8 days. After 4 days, 12 more men joined them. How many days to complete remaining work?",
+options:["2(19/38)","2(27/38)","2(23/19)","2(26/19)"],
+answer:"2(27/38)"
+},
+
+{
+question:"Working 9 hours daily, 32 men can complete a work in 25 days. In how many days can 40 men complete 2.5 times the work working 6 hours daily?",
+options:["72","75","60","80"],
+answer:"75"
+},
+
+{
+question:"12 girls can complete a work in 21 days. 7 boys finish 3/5 of the same work in 30 days. Find the time taken by 3 girls and 1 boy to complete 31/42 of the work.",
+options:["30 days","45 days","50 days","60 days"],
+answer:"45 days"
+},
+
+{
+question:"4 men and 5 women earn Rs.8800 in 8 days and 7 men and 10 women earn Rs.10250 in 5 days. In how many days can 8 men and 12 women earn Rs.21600?",
+options:["8","9","10","11"],
+answer:"10"
+},
+
+{
+question:"A pipe fills a tank in 6 hours and another empties it in 9 hours. If both are opened together, how long will it take to fill the tank?",
+options:["18 hr","14 hr","15 hr","16 hr"],
+answer:"18 hr"
+},
+
+{
+question:"Pipe A fills a tank in 20 mins, Pipe B in X mins and Pipe C empties it in 60 mins. If all are opened together, tank fills in 15 mins. Find X.",
+options:["40","30","20","45"],
+answer:"30"
+},
+
+{
+question:"Three taps A, B and C fill a tank in 10h, 20h and 25h respectively. Find the percentage of work done by Tap A itself.",
+options:["32%","75%","52%","72%"],
+answer:"52%"
+}
+
+];
+
+/* NAVIGATION */
+
+function show(id){
+
+document
+.querySelectorAll(".section")
+.forEach(s=>s.classList.remove("active"));
+
+document
+.getElementById(id)
+.classList.add("active");
+}
+
+/* START */
+
+function startExam(){
+
+index=0;
+answers=[];
+
+show("mcq");
+
+loadQ();
+
+goFullScreen();
+}
+
+/* LOAD QUESTION */
+
+function loadQ(){
+
+let q=questions[index];
+
+document.getElementById("qText").innerHTML=
+"<b>Question "+(index+1)+" of "+questions.length+"</b><br><br>"+q.question;
+
+let html="";
+
+q.options.forEach(opt=>{
+
+html+=`
+<div class="option">
+<label>
+<input type="radio"
+name="answer"
+value="${opt}">
+${opt}
+</label>
+</div>
+`;
+
+});
+
+document.getElementById("options").innerHTML=html;
+
+/* 2 MIN TIMER */
+
+let mcqTime=120;
+
+clearInterval(timer);
+
+timer=setInterval(()=>{
+
+let m=Math.floor(mcqTime/60);
+let s=mcqTime%60;
+
+document.getElementById("timer").innerText=
+"Time: "+m+":"+(s<10?"0"+s:s);
+
+mcqTime--;
+
+if(mcqTime<0){
+nextQ();
+}
+
+},1000);
+
+}
+
+/* NEXT QUESTION */
+
+function nextQ(){
+
+let selected=document.querySelector(
+'input[name="answer"]:checked'
+);
+
+answers[index]=selected ? selected.value : "";
+
+clearInterval(timer);
+
+index++;
+
+if(index<questions.length){
+
+loadQ();
+
+}else{
+
+finishExam();
+
+}
+
+}
+/* FINISH EXAM */
+
+function finishExam(){
+
+clearInterval(timer);
+
+let score=0;
+
+for(let i=0;i<questions.length;i++){
+
+if(answers[i]===questions[i].answer){
+score++;
+}
+
+}
+
+let percentage=
+((score/questions.length)*100).toFixed(2);
+
+show("result");
+
+document.getElementById("score").innerHTML=
+"Score : "+score+" / "+questions.length;
+
+document.getElementById("percentage").innerHTML=
+"Percentage : "+percentage+"%";
+
+document.getElementById("timer").innerHTML=
+"Exam Completed";
+
+}
+
+</script>
+
+</body>
+</html>
